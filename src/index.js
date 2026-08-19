@@ -4,10 +4,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // --------------------------------------------------
-    // HOME
-    // --------------------------------------------------
-
     if (url.pathname === "/") {
       return Response.json({
         ok: true,
@@ -18,10 +14,6 @@ export default {
       });
     }
 
-    // --------------------------------------------------
-    // HEALTH
-    // --------------------------------------------------
-
     if (url.pathname === "/health") {
       return Response.json({
         ok: true,
@@ -31,30 +23,19 @@ export default {
       });
     }
 
-    // --------------------------------------------------
-    // TELEGRAM WEBHOOK
-    // --------------------------------------------------
-
-    if (url.pathname === "/telegram/webhook") {
-      return handleTelegramWebhook(request, env);
-    }
-
-    // --------------------------------------------------
-    // STATUS
-    // --------------------------------------------------
-
     if (url.pathname === "/status") {
       return Response.json({
         ok: true,
         service: "nantry",
         version: VERSION,
-        telegram_configured:
-          !!env.TELEGRAM_BOT_TOKEN,
-        webhook_secret_configured:
-          !!env.TELEGRAM_WEBHOOK_SECRET,
-        database_configured:
-          !!env.DB
+        telegram_configured: !!env.TELEGRAM_BOT_TOKEN,
+        webhook_secret_configured: !!env.TELEGRAM_WEBHOOK_SECRET,
+        database_configured: !!env.DB
       });
+    }
+
+    if (url.pathname === "/telegram/webhook") {
+      return handleTelegramWebhook(request, env);
     }
 
     return Response.json(
@@ -77,13 +58,8 @@ export default {
 };
 
 
-// ======================================================
-// TELEGRAM WEBHOOK
-// ======================================================
-
 async function handleTelegramWebhook(request, env) {
 
-  // Telegram sends POST requests.
   if (request.method !== "POST") {
     return new Response(
       "Nantry Telegram webhook is active",
@@ -92,10 +68,6 @@ async function handleTelegramWebhook(request, env) {
       }
     );
   }
-
-  // ----------------------------------------------------
-  // SECURITY
-  // ----------------------------------------------------
 
   if (env.TELEGRAM_WEBHOOK_SECRET) {
     const receivedSecret =
@@ -115,10 +87,6 @@ async function handleTelegramWebhook(request, env) {
       );
     }
   }
-
-  // ----------------------------------------------------
-  // READ TELEGRAM UPDATE
-  // ----------------------------------------------------
 
   let update;
 
@@ -140,26 +108,14 @@ async function handleTelegramWebhook(request, env) {
 
   const message = update?.message;
 
-  // Telegram can send updates that are not messages.
   if (!message) {
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
 
-  const chatId =
-    message?.chat?.id;
+  const chatId = message?.chat?.id;
 
   if (!chatId) {
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
 
   const text =
@@ -167,9 +123,6 @@ async function handleTelegramWebhook(request, env) {
       ? message.text.trim()
       : "";
 
-  // ----------------------------------------------------
-  // COMMANDS
-  // ----------------------------------------------------
 
   if (
     text === "/start" ||
@@ -193,13 +146,9 @@ async function handleTelegramWebhook(request, env) {
       ].join("\n")
     );
 
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
+
 
   if (text === "/status") {
     await sendTelegramMessage(
@@ -208,7 +157,7 @@ async function handleTelegramWebhook(request, env) {
       [
         "📊 <b>NANTRY STATUS</b>",
         "",
-        `Worker: ${env ? "✅" : "❌"}`,
+        "Worker: ✅",
         `Telegram: ${
           env.TELEGRAM_BOT_TOKEN
             ? "✅ configured"
@@ -227,13 +176,9 @@ async function handleTelegramWebhook(request, env) {
       ].join("\n")
     );
 
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
+
 
   if (text === "/trends") {
     await sendTelegramMessage(
@@ -242,25 +187,19 @@ async function handleTelegramWebhook(request, env) {
       [
         "🔥 <b>NANTRY TRENDS</b>",
         "",
-        "The trend engine is being connected.",
+        "Trend collection is being connected.",
         "",
-        "Sources will include:",
+        "Sources:",
         "• Google News",
         "• Google Trends signals",
         "• YouTube",
-        "• Nandi/Kapsabet local signals",
-        "",
-        "D1 storage is the next configuration step."
+        "• Local Nandi signals"
       ].join("\n")
     );
 
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
+
 
   if (text === "/rising") {
     await sendTelegramMessage(
@@ -271,7 +210,7 @@ async function handleTelegramWebhook(request, env) {
         "",
         "The trend engine is being connected.",
         "",
-        "Once D1 is connected, Nantry will rank topics by:",
+        "Topics will eventually be ranked by:",
         "• volume",
         "• velocity",
         "• source diversity",
@@ -279,13 +218,9 @@ async function handleTelegramWebhook(request, env) {
       ].join("\n")
     );
 
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
+
 
   if (text === "/collect") {
     await sendTelegramMessage(
@@ -296,21 +231,13 @@ async function handleTelegramWebhook(request, env) {
         "",
         "Collection engine is ready.",
         "",
-        "D1 storage and external source keys are the next configuration step."
+        "External sources and D1 storage are the next step."
       ].join("\n")
     );
 
-    return new Response(
-      "OK",
-      {
-        status: 200
-      }
-    );
+    return new Response("OK");
   }
 
-  // ----------------------------------------------------
-  // UNKNOWN COMMAND
-  // ----------------------------------------------------
 
   await sendTelegramMessage(
     env,
@@ -318,18 +245,9 @@ async function handleTelegramWebhook(request, env) {
     "Unknown command. Send /help."
   );
 
-  return new Response(
-    "OK",
-    {
-      status: 200
-    }
-  );
+  return new Response("OK");
 }
 
-
-// ======================================================
-// TELEGRAM API
-// ======================================================
 
 async function sendTelegramMessage(
   env,
@@ -349,8 +267,7 @@ async function sendTelegramMessage(
     {
       method: "POST",
       headers: {
-        "Content-Type":
-          "application/json"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         chat_id: chatId,
