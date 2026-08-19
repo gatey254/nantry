@@ -1,1 +1,11 @@
-{"name":"nandi-pulse-bot","private":true,"type":"module","scripts":{"dev":"wrangler dev","deploy":"wrangler deploy"},"devDependencies":{"@cloudflare/workers-types":"latest","typescript":"latest","wrangler":"latest"}}
+{
+  "name": "nantry",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.124.0"
+  }
+}
