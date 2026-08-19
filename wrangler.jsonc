@@ -1,8 +1,12 @@
-name = "nantry"
-main = "src/index.js"
-compatibility_date = "2026-08-20"
-
-workers_dev = true
-
-[triggers]
-crons = ["*/30 * * * *"]
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nantry",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-20",
+  "workers_dev": true,
+  "triggers": {
+    "crons": [
+      "*/30 * * * *"
+    ]
+  }
+}
