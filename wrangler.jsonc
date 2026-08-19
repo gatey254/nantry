@@ -1,0 +1,8 @@
+{
+  "$schema":"node_modules/wrangler/config-schema.json",
+  "name":"nandi-pulse-bot",
+  "main":"src/index.ts",
+  "compatibility_date":"2026-08-19",
+  "triggers":{"crons":["*/30 * * * *","30 4 * * *"]},
+  "d1_databases":[{"binding":"DB","database_name":"nandi-pulse","database_id":"REPLACE_WITH_D1_ID"}]
+}
