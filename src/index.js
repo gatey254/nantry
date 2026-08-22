@@ -1,4 +1,4 @@
-const VERSION = "2.1.0";
+const VERSION = "3.0.0";
 
 const GOOGLE_NEWS_QUERIES = [
   "Nandi County Kenya",
@@ -24,89 +24,6 @@ const YOUTUBE_QUERIES = [
   "Kapsabet Kenya",
   "Nandi Kenya"
 ];
-
-// Order matters: more specific / rarer categories first so a story
-// that mentions both "road" and "county government" lands in the
-// more useful bucket rather than the generic one.
-const CATEGORY_KEYWORDS = {
-  politics: [
-    "politics", "political", "governor", "senator", "member of parliament",
-    " mp ", "mca", "county government", "election", "elections", "party",
-    "government", "assembly", "president", "deputy president", "cabinet",
-    "county assembly", "impeachment", "nomination"
-  ],
-
-  infrastructure: [
-    "road", "roads", "bridge", "bridges", "tarmac", "highway", "construction",
-    "contractor", "tender", "kura", "kerra", "kenha", "electricity", "kplc",
-    "power outage", "blackout", "street light", "water project", "borehole",
-    "dam", "pipeline", "sewer", "housing project"
-  ],
-
-  land: [
-    "land", "title deed", "title deeds", "boundary", "boundaries",
-    "eviction", "squatter", "squatters", "surveyor", "land dispute",
-    "land grabbing", "settlement scheme"
-  ],
-
-  weather: [
-    "weather", "rain", "rains", "rainfall", "drought", "flood", "floods",
-    "flooding", "hailstorm", "storm", "forecast", "météo", "kmd"
-  ],
-
-  tourism: [
-    "tourism", "tourist", "tourists", "hotel", "hotels", "resort",
-    "heritage site", "cultural site", "eco-tourism", "safari", "attraction"
-  ],
-
-  business: [
-    "business", "market", "markets", "trade", "company", "companies",
-    "investment", "investor", "jobs", "job", "employment", "economy",
-    "economic", "entrepreneur", "startup", "money", "sacco", "cooperative"
-  ],
-
-  education: [
-    "school", "schools", "education", "student", "students", "teacher",
-    "teachers", "university", "college", "exam", "exams", "kcse", "knec",
-    "tvet", "campus", "learning", "bursary", "scholarship"
-  ],
-
-  health: [
-    "health", "hospital", "hospitals", "doctor", "doctors", "clinic",
-    "clinics", "medicine", "medical", "disease", "malaria", "outbreak",
-    "patient", "patients", "nhif", "sha ", "maternity"
-  ],
-
-  sports: [
-    "sport", "sports", "football", "soccer", "athletics", "athlete",
-    "athletes", "runner", "runners", "running", "marathon", "tournament",
-    "match", "league", "championship", "world record", "olympics",
-    "world championships"
-  ],
-
-  crime: [
-    "crime", "criminal", "police", "arrest", "arrested", "murder", "killed",
-    "robbery", "theft", "court", "fraud", "accident", "missing",
-    "investigation", "shot dead", "stabbed", "assault", "kidnap"
-  ],
-
-  agriculture: [
-    "farm", "farmer", "farmers", "agriculture", "maize", "milk", "dairy",
-    "coffee", "tea", "livestock", "cattle", "fertilizer", "harvest", "crop",
-    "crops", "kenya seed", "agrovet", "extension officer"
-  ],
-
-  entertainment: [
-    "music", "musician", "artist", "artists", "celebrity", "concert",
-    "festival", "movie", "film", "entertainment", "dj", "actor", "actress"
-  ],
-
-  culture: [
-    "chief", "chief's baraza", "baraza", "elder", "elders", "ceremony",
-    "circumcision", "cultural", "heritage", "kalenjin", "tradition",
-    "traditional"
-  ]
-};
 
 export default {
 
@@ -222,7 +139,6 @@ async function collectSignals(env) {
       const items = await fetchGoogleNews(query);
       for (const item of items) {
         item.source = "google_news";
-        item.category = categorize(`${item.title} ${item.description}`);
         item.score = calculateScore(item, "google_news");
         allItems.push(item);
       }
@@ -236,7 +152,6 @@ async function collectSignals(env) {
     const items = await fetchRSS(trendsUrl);
     for (const item of items) {
       item.source = "google_trends";
-      item.category = categorize(`${item.title} ${item.description}`);
       item.score = calculateScore(item, "google_trends");
       allItems.push(item);
     }
@@ -250,7 +165,6 @@ async function collectSignals(env) {
         const items = await fetchYouTube(env.YOUTUBE_API_KEY, query);
         for (const item of items) {
           item.source = "youtube";
-          item.category = categorize(`${item.title} ${item.description}`);
           item.score = calculateScore(item, "youtube");
           allItems.push(item);
         }
@@ -395,29 +309,6 @@ async function fetchYouTube(apiKey, query) {
 }
 
 /* =========================================================
-   CATEGORIZATION
-========================================================= */
-
-function categorize(text) {
-  const value = String(text || "").toLowerCase();
-  let bestCategory = "general";
-  let bestScore = 0;
-
-  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    let score = 0;
-    for (const keyword of keywords) {
-      if (value.includes(keyword)) score++;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestCategory = category;
-    }
-  }
-
-  return bestCategory;
-}
-
-/* =========================================================
    SIGNAL SCORING
 ========================================================= */
 
@@ -459,7 +350,7 @@ async function getTrends(env) {
 
   for (const s of TRENDS_SOURCES) {
     const result = await env.DB.prepare(`
-      SELECT title, url, category, score, published_at, collected_at
+      SELECT title, url, score, published_at, collected_at
       FROM source_items
       WHERE source = ? AND collected_at >= datetime('now', '-7 days')
       ORDER BY score DESC, collected_at DESC
@@ -473,70 +364,27 @@ async function getTrends(env) {
 }
 
 /* =========================================================
-   RISING TOPICS — category momentum + one sample headline each
+   RISING — what's hot right now (last 24 hours, ranked by score)
 ========================================================= */
 
 async function getRising(env) {
   if (!env.DB) {
-    return { ok: false, error: "D1 is not configured.", rising: [] };
+    return { ok: false, error: "D1 is not configured.", stories: [] };
   }
 
   const result = await env.DB.prepare(`
-    WITH current_period AS (
-      SELECT category, COUNT(*) AS current_mentions, SUM(score) AS current_score
-      FROM source_items
-      WHERE collected_at >= datetime('now', '-24 hours')
-      GROUP BY category
-    ),
-    previous_period AS (
-      SELECT category, COUNT(*) AS previous_mentions, SUM(score) AS previous_score
-      FROM source_items
-      WHERE collected_at >= datetime('now', '-7 days')
-        AND collected_at < datetime('now', '-24 hours')
-      GROUP BY category
-    )
-    SELECT
-      c.category,
-      c.current_mentions,
-      ROUND(c.current_score, 2) AS current_score,
-      COALESCE(p.previous_mentions, 0) AS previous_mentions,
-      ROUND(
-        (c.current_mentions * 1.0) /
-        CASE WHEN p.previous_mentions > 0 THEN p.previous_mentions ELSE 1 END,
-        2
-      ) AS momentum
-    FROM current_period c
-    LEFT JOIN previous_period p ON p.category = c.category
-    ORDER BY momentum DESC, current_score DESC
-    LIMIT 8
+    SELECT source, title, url, score, published_at, collected_at
+    FROM source_items
+    WHERE collected_at >= datetime('now', '-24 hours')
+    ORDER BY score DESC, collected_at DESC
+    LIMIT 10
   `).all();
 
-  const rising = result.results || [];
-
-  // Attach one representative headline per rising category so the
-  // number isn't floating on its own.
-  for (const row of rising) {
-    try {
-      const sample = await env.DB.prepare(`
-        SELECT title, url FROM source_items
-        WHERE category = ? AND collected_at >= datetime('now', '-24 hours')
-        ORDER BY score DESC, collected_at DESC
-        LIMIT 1
-      `).bind(row.category).first();
-
-      row.sample_title = sample?.title || null;
-      row.sample_url = sample?.url || null;
-    } catch {
-      row.sample_title = null;
-      row.sample_url = null;
-    }
-  }
-
-  return { ok: true, period: "last 24 hours vs previous 6 days", rising };
+  return { ok: true, period: "last 24 hours", stories: result.results || [] };
 }
 
 /* =========================================================
-   TOPIC SEARCH — matches category name OR free text
+   TOPIC SEARCH — free text against title / description
 ========================================================= */
 
 async function getTopic(env, query) {
@@ -545,15 +393,14 @@ async function getTopic(env, query) {
   }
 
   const like = `%${query}%`;
-  const categoryMatch = query.trim().toLowerCase();
 
   const result = await env.DB.prepare(`
-    SELECT source, title, description, url, category, score, published_at, collected_at
+    SELECT source, title, description, url, score, published_at, collected_at
     FROM source_items
-    WHERE category = ? OR title LIKE ? OR description LIKE ?
+    WHERE title LIKE ? OR description LIKE ?
     ORDER BY score DESC, collected_at DESC
     LIMIT 20
-  `).bind(categoryMatch, like, like).all();
+  `).bind(like, like).all();
 
   return { ok: true, query, items: result.results || [] };
 }
@@ -606,8 +453,8 @@ async function handleTelegramWebhook(request, env) {
       "<b>Commands</b>",
       "",
       "/trends — top stories right now",
-      "/rising — fastest-moving categories",
-      "/topic football — search a topic or category",
+      "/rising — what's hot in the last 24 hours",
+      "/topic football — search for a topic",
       "/collect — collect fresh signals",
       "/status — system status",
       "",
@@ -722,7 +569,7 @@ function formatTrends(result) {
     }
 
     const lines = group.stories.map((item, index) =>
-      `${index + 1}. ${escapeHTML(item.title)} <i>[${escapeHTML(item.category)}]</i>${item.url ? `\n${item.url}` : ""}`
+      `${index + 1}. ${escapeHTML(item.title)}${item.url ? `\n${item.url}` : ""}`
     );
 
     return [`<b>${escapeHTML(group.label)}</b>`, ...lines].join("\n");
@@ -734,20 +581,18 @@ function formatTrends(result) {
 function formatRising(result) {
   if (!result.ok) return `⚠️ ${escapeHTML(result.error)}`;
 
-  if (!result.rising.length) {
+  if (!result.stories.length) {
     return ["📈 <b>NANTRY RISING</b>", "", "No recent signals yet."].join("\n");
   }
 
   return [
     "📈 <b>NANTRY RISING</b>",
     "",
-    "Fastest-moving categories (last 24h vs prior week):",
+    "What's hot in the last 24 hours:",
     "",
-    ...result.rising.slice(0, 8).map((item, index) => {
-      const header = `${index + 1}. <b>${escapeHTML(item.category)}</b> — ${item.current_mentions} signals (${item.momentum}x)`;
-      const sample = item.sample_title ? `\n   ↳ ${escapeHTML(item.sample_title)}${item.sample_url ? `\n   ${item.sample_url}` : ""}` : "";
-      return header + sample;
-    })
+    ...result.stories.map((item, index) =>
+      `${index + 1}. ${escapeHTML(item.title)}${item.url ? `\n${item.url}` : ""}`
+    )
   ].join("\n\n");
 }
 
@@ -762,7 +607,7 @@ function formatTopic(result) {
     `🔎 <b>${escapeHTML(result.query)}</b>`,
     "",
     ...result.items.slice(0, 10).map((item, index) =>
-      `${index + 1}. ${escapeHTML(item.title)} <i>[${escapeHTML(item.category)}]</i>\n${item.url || ""}`
+      `${index + 1}. ${escapeHTML(item.title)}\n${item.url || ""}`
     )
   ].join("\n\n");
 }
