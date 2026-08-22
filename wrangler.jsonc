@@ -4,6 +4,15 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-20",
   "workers_dev": true,
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nantry",
+      "database_id": "785ad9ce-29e8-4d2e-af6e-7eb35ff39d48"
+    }
+  ],
+
   "triggers": {
     "crons": [
       "*/30 * * * *"
