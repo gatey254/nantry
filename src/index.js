@@ -1,6 +1,9 @@
-const VERSION = "2.1.0";
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-const GOOGLE_NEWS_QUERIES = [
+// src/index.js
+var VERSION = "2.2.0";
+var GOOGLE_NEWS_QUERIES = [
   "Nandi County Kenya",
   "Nandi Kenya",
   "Kapsabet Kenya",
@@ -18,101 +21,288 @@ const GOOGLE_NEWS_QUERIES = [
   "Nandi county government",
   "Nandi weather"
 ];
-
-const YOUTUBE_QUERIES = [
+var YOUTUBE_QUERIES = [
   "Nandi County Kenya",
   "Kapsabet Kenya",
   "Nandi Kenya"
 ];
 
-// Order matters: more specific / rarer categories first so a story
-// that mentions both "road" and "county government" lands in the
-// more useful bucket rather than the generic one.
-const CATEGORY_KEYWORDS = {
+// Anchor terms that genuinely place a story in Nandi County, Kenya.
+// Deliberately excludes the bare word "nandi" on its own, since that
+// also matches unrelated people/places (e.g. "Nandi Madida", a South
+// African singer). Every phrase here is multi-word and place-specific.
+var ANCHOR_TERMS = [
+  "nandi county",
+  "nandi county government",
+  "county government of nandi",
+  "kapsabet",
+  "nandi hills",
+  "nandi north",
+  "nandi south",
+  "nandi east",
+  "nandi west",
+  "aldai constituency",
+  "tinderet constituency",
+  "chesumei",
+  "emgwen",
+  "mosop constituency",
+  "kilibwoni",
+  "chepterit",
+  "kabiyet",
+  "kaptumo",
+  "kipkaren",
+  "mosoriot",
+  "nandi senator",
+  "nandi governor",
+  "nandi mca",
+  "nandi stadium",
+  "kingwal",
+  "kabisaga",
+  "nandi hills town"
+];
+
+var CATEGORY_KEYWORDS = {
   politics: [
-    "politics", "political", "governor", "senator", "member of parliament",
-    " mp ", "mca", "county government", "election", "elections", "party",
-    "government", "assembly", "president", "deputy president", "cabinet",
-    "county assembly", "impeachment", "nomination"
+    "politics",
+    "political",
+    "governor",
+    "senator",
+    "member of parliament",
+    " mp ",
+    "mca",
+    "county government",
+    "election",
+    "elections",
+    "party",
+    "government",
+    "assembly",
+    "president",
+    "deputy president",
+    "cabinet",
+    "county assembly",
+    "impeachment",
+    "nomination"
   ],
-
   infrastructure: [
-    "road", "roads", "bridge", "bridges", "tarmac", "highway", "construction",
-    "contractor", "tender", "kura", "kerra", "kenha", "electricity", "kplc",
-    "power outage", "blackout", "street light", "water project", "borehole",
-    "dam", "pipeline", "sewer", "housing project"
+    "road",
+    "roads",
+    "bridge",
+    "bridges",
+    "tarmac",
+    "highway",
+    "construction",
+    "contractor",
+    "tender",
+    "kura",
+    "kerra",
+    "kenha",
+    "electricity",
+    "kplc",
+    "power outage",
+    "blackout",
+    "street light",
+    "water project",
+    "borehole",
+    "dam",
+    "pipeline",
+    "sewer",
+    "housing project"
   ],
-
   land: [
-    "land", "title deed", "title deeds", "boundary", "boundaries",
-    "eviction", "squatter", "squatters", "surveyor", "land dispute",
-    "land grabbing", "settlement scheme"
+    "land",
+    "title deed",
+    "title deeds",
+    "boundary",
+    "boundaries",
+    "eviction",
+    "squatter",
+    "squatters",
+    "surveyor",
+    "land dispute",
+    "land grabbing",
+    "settlement scheme"
   ],
-
   weather: [
-    "weather", "rain", "rains", "rainfall", "drought", "flood", "floods",
-    "flooding", "hailstorm", "storm", "forecast", "météo", "kmd"
+    "weather",
+    "rain",
+    "rains",
+    "rainfall",
+    "drought",
+    "flood",
+    "floods",
+    "flooding",
+    "hailstorm",
+    "storm",
+    "forecast",
+    "m\xE9t\xE9o",
+    "kmd"
   ],
-
   tourism: [
-    "tourism", "tourist", "tourists", "hotel", "hotels", "resort",
-    "heritage site", "cultural site", "eco-tourism", "safari", "attraction"
+    "tourism",
+    "tourist",
+    "tourists",
+    "hotel",
+    "hotels",
+    "resort",
+    "heritage site",
+    "cultural site",
+    "eco-tourism",
+    "safari",
+    "attraction"
   ],
-
   business: [
-    "business", "market", "markets", "trade", "company", "companies",
-    "investment", "investor", "jobs", "job", "employment", "economy",
-    "economic", "entrepreneur", "startup", "money", "sacco", "cooperative"
+    "business",
+    "market",
+    "markets",
+    "trade",
+    "company",
+    "companies",
+    "investment",
+    "investor",
+    "jobs",
+    "job",
+    "employment",
+    "economy",
+    "economic",
+    "entrepreneur",
+    "startup",
+    "money",
+    "sacco",
+    "cooperative"
   ],
-
   education: [
-    "school", "schools", "education", "student", "students", "teacher",
-    "teachers", "university", "college", "exam", "exams", "kcse", "knec",
-    "tvet", "campus", "learning", "bursary", "scholarship"
+    "school",
+    "schools",
+    "education",
+    "student",
+    "students",
+    "teacher",
+    "teachers",
+    "university",
+    "college",
+    "exam",
+    "exams",
+    "kcse",
+    "knec",
+    "tvet",
+    "campus",
+    "learning",
+    "bursary",
+    "scholarship"
   ],
-
   health: [
-    "health", "hospital", "hospitals", "doctor", "doctors", "clinic",
-    "clinics", "medicine", "medical", "disease", "malaria", "outbreak",
-    "patient", "patients", "nhif", "sha ", "maternity"
+    "health",
+    "hospital",
+    "hospitals",
+    "doctor",
+    "doctors",
+    "clinic",
+    "clinics",
+    "medicine",
+    "medical",
+    "disease",
+    "malaria",
+    "outbreak",
+    "patient",
+    "patients",
+    "nhif",
+    "sha ",
+    "maternity"
   ],
-
   sports: [
-    "sport", "sports", "football", "soccer", "athletics", "athlete",
-    "athletes", "runner", "runners", "running", "marathon", "tournament",
-    "match", "league", "championship", "world record", "olympics",
+    "sport",
+    "sports",
+    "football",
+    "soccer",
+    "athletics",
+    "athlete",
+    "athletes",
+    "runner",
+    "runners",
+    "running",
+    "marathon",
+    "tournament",
+    "match",
+    "league",
+    "championship",
+    "world record",
+    "olympics",
     "world championships"
   ],
-
   crime: [
-    "crime", "criminal", "police", "arrest", "arrested", "murder", "killed",
-    "robbery", "theft", "court", "fraud", "accident", "missing",
-    "investigation", "shot dead", "stabbed", "assault", "kidnap"
+    "crime",
+    "criminal",
+    "police",
+    "arrest",
+    "arrested",
+    "murder",
+    "killed",
+    "robbery",
+    "theft",
+    "court",
+    "fraud",
+    "accident",
+    "missing",
+    "investigation",
+    "shot dead",
+    "stabbed",
+    "assault",
+    "kidnap"
   ],
-
   agriculture: [
-    "farm", "farmer", "farmers", "agriculture", "maize", "milk", "dairy",
-    "coffee", "tea", "livestock", "cattle", "fertilizer", "harvest", "crop",
-    "crops", "kenya seed", "agrovet", "extension officer"
+    "farm",
+    "farmer",
+    "farmers",
+    "agriculture",
+    "maize",
+    "milk",
+    "dairy",
+    "coffee",
+    "tea",
+    "livestock",
+    "cattle",
+    "fertilizer",
+    "harvest",
+    "crop",
+    "crops",
+    "kenya seed",
+    "agrovet",
+    "extension officer"
   ],
-
   entertainment: [
-    "music", "musician", "artist", "artists", "celebrity", "concert",
-    "festival", "movie", "film", "entertainment", "dj", "actor", "actress"
+    "music",
+    "musician",
+    "artist",
+    "artists",
+    "celebrity",
+    "concert",
+    "festival",
+    "movie",
+    "film",
+    "entertainment",
+    "dj",
+    "actor",
+    "actress"
   ],
-
   culture: [
-    "chief", "chief's baraza", "baraza", "elder", "elders", "ceremony",
-    "circumcision", "cultural", "heritage", "kalenjin", "tradition",
+    "chief",
+    "chief's baraza",
+    "baraza",
+    "elder",
+    "elders",
+    "ceremony",
+    "circumcision",
+    "cultural",
+    "heritage",
+    "kalenjin",
+    "tradition",
     "traditional"
   ]
 };
 
-export default {
-
+var index_default = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-
     try {
       if (url.pathname === "/") {
         return json({
@@ -124,36 +314,21 @@ export default {
           webhook: "/telegram/webhook"
         });
       }
-
       if (url.pathname === "/health") {
-        return json({ ok: true, service: "nantry", status: "healthy", time: new Date().toISOString() });
+        return json({ ok: true, service: "nantry", status: "healthy", time: (/* @__PURE__ */ new Date()).toISOString() });
       }
-
       if (url.pathname === "/status") {
-        return json({
-          ok: true,
-          service: "nantry",
-          version: VERSION,
-          telegram_configured: Boolean(env.TELEGRAM_BOT_TOKEN),
-          webhook_secret_configured: Boolean(env.TELEGRAM_WEBHOOK_SECRET),
-          d1_configured: Boolean(env.DB),
-          youtube_configured: Boolean(env.YOUTUBE_API_KEY),
-          google_trends_configured: Boolean(env.GOOGLE_TRENDS_RSS_URL)
-        });
+        return json(await getStatus(env));
       }
-
       if (url.pathname === "/collect") {
         return json(await collectSignals(env));
       }
-
       if (url.pathname === "/trends") {
         return json(await getTrends(env));
       }
-
       if (url.pathname === "/rising") {
         return json(await getRising(env));
       }
-
       if (url.pathname === "/topic") {
         const query = url.searchParams.get("query");
         if (!query) {
@@ -161,42 +336,43 @@ export default {
         }
         return json(await getTopic(env, query));
       }
-
       if (url.pathname === "/telegram/webhook") {
         return handleTelegramWebhook(request, env);
       }
-
       return json({ ok: false, error: "Not found" }, 404);
-
     } catch (error) {
       console.error(error);
       return json({ ok: false, error: error.message || "Internal error" }, 500);
     }
   },
-
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(collectSignals(env));
   }
 };
 
-/* =========================================================
-   COLLECTION
-========================================================= */
+// ---- Relevance filtering ----
+
+function isRelevant(text) {
+  const value = String(text || "").toLowerCase();
+  return ANCHOR_TERMS.some((term) => value.includes(term));
+}
+__name(isRelevant, "isRelevant");
+
+// ---- Collection ----
 
 async function collectSignals(env) {
-  const startedAt = new Date().toISOString();
+  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
   const errors = [];
   const allItems = [];
-
+  let filteredOut = 0;
   if (env.DB) {
     try {
       const recent = await env.DB.prepare(`
         SELECT started_at FROM collection_runs ORDER BY id DESC LIMIT 1
       `).first();
-
       if (recent?.started_at) {
         const age = Date.now() - new Date(recent.started_at).getTime();
-        if (age < 5 * 60 * 1000) {
+        if (age < 5 * 60 * 1e3) {
           return { ok: true, skipped: true, reason: "Collection ran less than 5 minutes ago" };
         }
       }
@@ -204,7 +380,6 @@ async function collectSignals(env) {
       errors.push(`collection lock: ${error.message}`);
     }
   }
-
   let runId = null;
   if (env.DB) {
     try {
@@ -216,13 +391,17 @@ async function collectSignals(env) {
       errors.push(`run start: ${error.message}`);
     }
   }
-
   for (const query of GOOGLE_NEWS_QUERIES) {
     try {
       const items = await fetchGoogleNews(query);
       for (const item of items) {
+        const text = `${item.title} ${item.description}`;
+        if (!isRelevant(text)) {
+          filteredOut++;
+          continue;
+        }
         item.source = "google_news";
-        item.category = categorize(`${item.title} ${item.description}`);
+        item.category = categorize(text);
         item.score = calculateScore(item, "google_news");
         allItems.push(item);
       }
@@ -230,27 +409,35 @@ async function collectSignals(env) {
       errors.push(`Google News "${query}": ${error.message}`);
     }
   }
-
   const trendsUrl = env.GOOGLE_TRENDS_RSS_URL || "https://trends.google.com/trending/rss?geo=KE";
   try {
     const items = await fetchRSS(trendsUrl);
     for (const item of items) {
+      const text = `${item.title} ${item.description}`;
+      if (!isRelevant(text)) {
+        filteredOut++;
+        continue;
+      }
       item.source = "google_trends";
-      item.category = categorize(`${item.title} ${item.description}`);
+      item.category = categorize(text);
       item.score = calculateScore(item, "google_trends");
       allItems.push(item);
     }
   } catch (error) {
     errors.push(`Google Trends: ${error.message}`);
   }
-
   if (env.YOUTUBE_API_KEY) {
     for (const query of YOUTUBE_QUERIES) {
       try {
         const items = await fetchYouTube(env.YOUTUBE_API_KEY, query);
         for (const item of items) {
+          const text = `${item.title} ${item.description}`;
+          if (!isRelevant(text)) {
+            filteredOut++;
+            continue;
+          }
           item.source = "youtube";
-          item.category = categorize(`${item.title} ${item.description}`);
+          item.category = categorize(text);
           item.score = calculateScore(item, "youtube");
           allItems.push(item);
         }
@@ -259,7 +446,6 @@ async function collectSignals(env) {
       }
     }
   }
-
   let inserted = 0;
   if (env.DB && allItems.length) {
     for (const item of allItems) {
@@ -270,9 +456,15 @@ async function collectSignals(env) {
           (source, external_id, title, description, url, category, score, published_at, collected_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-          item.source, externalId, item.title, item.description || "",
-          item.url || null, item.category || "general", item.score || 1,
-          item.published_at || null, startedAt
+          item.source,
+          externalId,
+          item.title,
+          item.description || "",
+          item.url || null,
+          item.category || "general",
+          item.score || 1,
+          item.published_at || null,
+          startedAt
         ).run();
         inserted += Number(result.meta?.changes || 0);
       } catch (error) {
@@ -280,90 +472,73 @@ async function collectSignals(env) {
       }
     }
   }
-
   if (env.DB && runId) {
     try {
       await env.DB.prepare(`
         UPDATE collection_runs SET finished_at = ?, fetched = ?, inserted = ?, errors = ? WHERE id = ?
-      `).bind(new Date().toISOString(), allItems.length, inserted, errors.length, runId).run();
+      `).bind((/* @__PURE__ */ new Date()).toISOString(), allItems.length, inserted, errors.length, runId).run();
     } catch (error) {
       console.error("Could not update collection run", error);
     }
   }
-
   return {
     ok: errors.length === 0,
     fetched: allItems.length,
+    filtered_out: filteredOut,
     inserted,
     errors,
     sources: {
-      google_news: allItems.filter(x => x.source === "google_news").length,
-      google_trends: allItems.filter(x => x.source === "google_trends").length,
-      youtube: allItems.filter(x => x.source === "youtube").length
+      google_news: allItems.filter((x) => x.source === "google_news").length,
+      google_trends: allItems.filter((x) => x.source === "google_trends").length,
+      youtube: allItems.filter((x) => x.source === "youtube").length
     }
   };
 }
-
-/* =========================================================
-   GOOGLE NEWS / RSS
-========================================================= */
+__name(collectSignals, "collectSignals");
 
 async function fetchGoogleNews(query) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-KE&gl=KE&ceid=KE:en`;
   return fetchRSS(url);
 }
+__name(fetchGoogleNews, "fetchGoogleNews");
 
 async function fetchRSS(url) {
   const response = await fetch(url, {
-    headers: { "User-Agent": "Nantry/2.1 (+https://nantry.wmwirotsi.workers.dev)" }
+    headers: { "User-Agent": "Nantry/2.2 (+https://nantry.wmwirotsi.workers.dev)" }
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const xml = await response.text();
   return parseRSS(xml);
 }
+__name(fetchRSS, "fetchRSS");
 
 function parseRSS(xml) {
   const items = [];
   const blocks = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
-
   for (const block of blocks) {
     const title = decodeXML(getTag(block, "title"));
     if (!title) continue;
-
     const link = getTag(block, "link");
     const description = decodeXML(getTag(block, "description"));
     const published = getTag(block, "pubDate") || getTag(block, "published") || getTag(block, "updated");
     const guid = getTag(block, "guid") || link || title;
-
     items.push({ external_id: guid, title, description, url: link, published_at: published });
   }
-
   return items;
 }
+__name(parseRSS, "parseRSS");
 
 function getTag(text, tag) {
   const regex = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i");
   const match = text.match(regex);
   return match ? match[1].trim() : "";
 }
+__name(getTag, "getTag");
 
 function decodeXML(value) {
-  return String(value || "")
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+  return String(value || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
 }
-
-/* =========================================================
-   YOUTUBE
-========================================================= */
+__name(decodeXML, "decodeXML");
 
 async function fetchYouTube(apiKey, query) {
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -375,34 +550,26 @@ async function fetchYouTube(apiKey, query) {
   url.searchParams.set("regionCode", "KE");
   url.searchParams.set("relevanceLanguage", "en");
   url.searchParams.set("key", apiKey);
-
   const response = await fetch(url);
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
-
   const data = await response.json();
-  return (data.items || [])
-    .filter(item => item.id?.videoId)
-    .map(item => ({
-      external_id: item.id.videoId,
-      title: item.snippet?.title || "Untitled",
-      description: item.snippet?.description || "",
-      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      published_at: item.snippet?.publishedAt || null
-    }));
+  return (data.items || []).filter((item) => item.id?.videoId).map((item) => ({
+    external_id: item.id.videoId,
+    title: item.snippet?.title || "Untitled",
+    description: item.snippet?.description || "",
+    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    published_at: item.snippet?.publishedAt || null
+  }));
 }
-
-/* =========================================================
-   CATEGORIZATION
-========================================================= */
+__name(fetchYouTube, "fetchYouTube");
 
 function categorize(text) {
   const value = String(text || "").toLowerCase();
   let bestCategory = "general";
   let bestScore = 0;
-
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     let score = 0;
     for (const keyword of keywords) {
@@ -413,50 +580,76 @@ function categorize(text) {
       bestCategory = category;
     }
   }
-
   return bestCategory;
 }
-
-/* =========================================================
-   SIGNAL SCORING
-========================================================= */
+__name(categorize, "categorize");
 
 function calculateScore(item, source) {
   let score = 1;
   if (source === "google_trends") score += 4;
   if (source === "youtube") score += 2;
   if (source === "google_news") score += 1;
-
   if (item.published_at) {
     const time = new Date(item.published_at).getTime();
     if (Number.isFinite(time)) {
       const age = Date.now() - time;
-      if (age < 24 * 60 * 60 * 1000) score += 3;
-      else if (age < 72 * 60 * 60 * 1000) score += 2;
-      else if (age < 7 * 24 * 60 * 60 * 1000) score += 1;
+      if (age < 24 * 60 * 60 * 1e3) score += 3;
+      else if (age < 72 * 60 * 60 * 1e3) score += 2;
+      else if (age < 7 * 24 * 60 * 60 * 1e3) score += 1;
     }
   }
-
   return score;
 }
+__name(calculateScore, "calculateScore");
 
-/* =========================================================
-   TREND REPORT — real top stories, grouped by source
-========================================================= */
-
-const TRENDS_SOURCES = [
+var TRENDS_SOURCES = [
   { key: "google_news", label: "Google News" },
   { key: "google_trends", label: "Google Trends" },
   { key: "youtube", label: "YouTube" }
 ];
 
+async function getStatus(env) {
+  const status = {
+    ok: true,
+    service: "nantry",
+    version: VERSION,
+    telegram_configured: Boolean(env.TELEGRAM_BOT_TOKEN),
+    webhook_secret_configured: Boolean(env.TELEGRAM_WEBHOOK_SECRET),
+    d1_configured: Boolean(env.DB),
+    youtube_configured: Boolean(env.YOUTUBE_API_KEY),
+    google_trends_configured: Boolean(env.GOOGLE_TRENDS_RSS_URL),
+    my_chat_id_configured: Boolean(env.MY_CHAT_ID)
+  };
+  if (env.DB) {
+    try {
+      const lastRun = await env.DB.prepare(`
+        SELECT started_at, finished_at, fetched, inserted, errors
+        FROM collection_runs ORDER BY id DESC LIMIT 1
+      `).first();
+      status.last_run = lastRun || null;
+      const totalItems = await env.DB.prepare(`SELECT COUNT(*) AS c FROM source_items`).first();
+      status.total_items = totalItems?.c || 0;
+      const last24h = await env.DB.prepare(`
+        SELECT COUNT(*) AS c FROM source_items WHERE collected_at >= datetime('now', '-24 hours')
+      `).first();
+      status.items_last_24h = last24h?.c || 0;
+      const subscriberCount = await env.DB.prepare(`
+        SELECT COUNT(*) AS c FROM chats WHERE enabled = 1
+      `).first();
+      status.subscriber_count = subscriberCount?.c || 0;
+    } catch (error) {
+      status.db_error = error.message;
+    }
+  }
+  return status;
+}
+__name(getStatus, "getStatus");
+
 async function getTrends(env) {
   if (!env.DB) {
     return { ok: false, error: "D1 is not configured.", groups: [] };
   }
-
   const groups = [];
-
   for (const s of TRENDS_SOURCES) {
     const result = await env.DB.prepare(`
       SELECT title, url, category, score, published_at, collected_at
@@ -465,22 +658,16 @@ async function getTrends(env) {
       ORDER BY score DESC, collected_at DESC
       LIMIT 5
     `).bind(s.key).all();
-
     groups.push({ source: s.key, label: s.label, stories: result.results || [] });
   }
-
   return { ok: true, period: "last 7 days", groups };
 }
-
-/* =========================================================
-   RISING TOPICS — category momentum + one sample headline each
-========================================================= */
+__name(getTrends, "getTrends");
 
 async function getRising(env) {
   if (!env.DB) {
     return { ok: false, error: "D1 is not configured.", rising: [] };
   }
-
   const result = await env.DB.prepare(`
     WITH current_period AS (
       SELECT category, COUNT(*) AS current_mentions, SUM(score) AS current_score
@@ -510,11 +697,7 @@ async function getRising(env) {
     ORDER BY momentum DESC, current_score DESC
     LIMIT 8
   `).all();
-
   const rising = result.results || [];
-
-  // Attach one representative headline per rising category so the
-  // number isn't floating on its own.
   for (const row of rising) {
     try {
       const sample = await env.DB.prepare(`
@@ -523,7 +706,6 @@ async function getRising(env) {
         ORDER BY score DESC, collected_at DESC
         LIMIT 1
       `).bind(row.category).first();
-
       row.sample_title = sample?.title || null;
       row.sample_url = sample?.url || null;
     } catch {
@@ -531,22 +713,16 @@ async function getRising(env) {
       row.sample_url = null;
     }
   }
-
   return { ok: true, period: "last 24 hours vs previous 6 days", rising };
 }
-
-/* =========================================================
-   TOPIC SEARCH — matches category name OR free text
-========================================================= */
+__name(getRising, "getRising");
 
 async function getTopic(env, query) {
   if (!env.DB) {
     return { ok: false, error: "D1 is not configured.", items: [] };
   }
-
   const like = `%${query}%`;
   const categoryMatch = query.trim().toLowerCase();
-
   const result = await env.DB.prepare(`
     SELECT source, title, description, url, category, score, published_at, collected_at
     FROM source_items
@@ -554,99 +730,76 @@ async function getTopic(env, query) {
     ORDER BY score DESC, collected_at DESC
     LIMIT 20
   `).bind(categoryMatch, like, like).all();
-
   return { ok: true, query, items: result.results || [] };
 }
-
-/* =========================================================
-   TELEGRAM
-========================================================= */
+__name(getTopic, "getTopic");
 
 async function handleTelegramWebhook(request, env) {
   if (request.method !== "POST") {
     return new Response("Nantry Telegram webhook is active", { status: 200 });
   }
-
   if (env.TELEGRAM_WEBHOOK_SECRET) {
     const received = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
     if (received !== env.TELEGRAM_WEBHOOK_SECRET) {
       return new Response("Unauthorized", { status: 401 });
     }
   }
-
   let update;
   try {
     update = await request.json();
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
-
   const message = update?.message;
   if (!message?.chat?.id) return new Response("OK");
-
   const chatId = message.chat.id;
   const text = typeof message.text === "string" ? message.text.trim() : "";
-
   if (env.DB) {
     try {
       await env.DB.prepare(`
         INSERT OR IGNORE INTO chats (chat_id, enabled, created_at) VALUES (?, 1, ?)
-      `).bind(String(chatId), new Date().toISOString()).run();
+      `).bind(String(chatId), (/* @__PURE__ */ new Date()).toISOString()).run();
     } catch (error) {
       console.error("Chat registration failed", error);
     }
   }
-
   if (text === "/start" || text === "/help") {
     await sendTelegramMessage(env, chatId, [
-      "📍 <b>NANTRY</b>",
+      "📍 <b>Nantry</b>",
       "",
       "Nandi County public-interest intelligence.",
       "",
       "<b>Commands</b>",
-      "",
       "/trends — top stories right now",
       "/rising — fastest-moving categories",
       "/topic football — search a topic or category",
       "/collect — collect fresh signals",
       "/status — system status",
       "",
-      "Nantry uses public signals from Google News, Google Trends and YouTube."
+      "Sources: Google News, Google Trends, YouTube."
     ].join("\n"));
     return new Response("OK");
   }
-
   if (text === "/status") {
-    await sendTelegramMessage(env, chatId, [
-      "📊 <b>NANTRY STATUS</b>",
-      "",
-      `Worker: ${env.DB ? "✅" : "⚠️"}`,
-      `D1: ${env.DB ? "✅" : "❌"}`,
-      `Telegram: ${env.TELEGRAM_BOT_TOKEN ? "✅" : "❌"}`,
-      `YouTube: ${env.YOUTUBE_API_KEY ? "✅" : "⚠️ optional"}`,
-      `Google Trends: ${env.GOOGLE_TRENDS_RSS_URL ? "✅ custom" : "✅ default Kenya feed"}`
-    ].join("\n"));
+    const status = await getStatus(env);
+    await sendTelegramMessage(env, chatId, formatStatus(status));
     return new Response("OK");
   }
-
   if (text === "/collect") {
     const result = await collectSignals(env);
     await sendTelegramMessage(env, chatId, formatCollection(result));
     return new Response("OK");
   }
-
   if (text === "/trends") {
     const result = await getTrends(env);
     await sendTelegramMessage(env, chatId, formatTrends(result));
     return new Response("OK");
   }
-
   if (text === "/rising") {
     const result = await getRising(env);
     await sendTelegramMessage(env, chatId, formatRising(result));
     return new Response("OK");
   }
-
   if (text.toLowerCase().startsWith("/topic")) {
     const query = text.replace(/^\/topic\s*/i, "").trim();
     if (!query) {
@@ -657,123 +810,213 @@ async function handleTelegramWebhook(request, env) {
     await sendTelegramMessage(env, chatId, formatTopic(result));
     return new Response("OK");
   }
-
+  if (text.toLowerCase().startsWith("/broadcast")) {
+    const isOwner = env.MY_CHAT_ID && String(chatId) === String(env.MY_CHAT_ID);
+    if (!isOwner) {
+      return new Response("OK");
+    }
+    const payload = text.replace(/^\/broadcast\s*/i, "").trim();
+    if (!payload) {
+      await sendTelegramMessage(env, chatId, "Use <b>/broadcast your message</b>.");
+      return new Response("OK");
+    }
+    const result = await broadcastMessage(env, payload);
+    await sendTelegramMessage(env, chatId, `📣 Broadcast sent to ${result.sent}/${result.total} chats.`);
+    return new Response("OK");
+  }
   await sendTelegramMessage(env, chatId, "Unknown command. Send /help.");
   return new Response("OK");
 }
+__name(handleTelegramWebhook, "handleTelegramWebhook");
 
-async function sendTelegramMessage(env, chatId, text) {
+async function broadcastMessage(env, text) {
+  if (!env.DB) return { sent: 0, total: 0 };
+  const result = await env.DB.prepare(`SELECT chat_id FROM chats WHERE enabled = 1`).all();
+  const chats = result.results || [];
+  let sent = 0;
+  for (const row of chats) {
+    try {
+      await sendTelegramMessage(env, row.chat_id, `📣 <b>Nantry</b>\n\n${escapeHTML(text)}`);
+      sent++;
+    } catch (error) {
+      console.error(`Broadcast to ${row.chat_id} failed`, error);
+    }
+  }
+  return { sent, total: chats.length };
+}
+__name(broadcastMessage, "broadcastMessage");
+
+async function sendTelegramMessage(env, chatId, text, retries = 2) {
   if (!env.TELEGRAM_BOT_TOKEN) {
     console.error("TELEGRAM_BOT_TOKEN is missing");
     return;
   }
-
-  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "HTML",
-      disable_web_page_preview: true
-    })
-  });
-
-  if (!response.ok) {
-    console.error("Telegram API error:", await response.text());
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: "HTML",
+          disable_web_page_preview: true
+        })
+      });
+      if (response.ok) return;
+      const body = await response.text();
+      if (attempt === retries) {
+        console.error("Telegram API error:", body);
+      }
+    } catch (error) {
+      if (attempt === retries) {
+        console.error("Telegram send failed:", error.message);
+      }
+    }
+    await sleep(300 * (attempt + 1));
   }
 }
+__name(sendTelegramMessage, "sendTelegramMessage");
 
-/* =========================================================
-   TELEGRAM FORMATTING
-========================================================= */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+__name(sleep, "sleep");
+
+// ---- Formatting ----
+// Links are rendered as short HTML anchors instead of raw pasted URLs,
+// which is what made messages sprawl into unreadable blue blocks.
+
+function linkTag(url, label = "Read more →") {
+  if (!url) return "";
+  return `<a href="${escapeAttr(url)}">${label}</a>`;
+}
+__name(linkTag, "linkTag");
+
+function categoryTag(category) {
+  if (!category || category === "general") return "";
+  return ` · ${escapeHTML(category)}`;
+}
+__name(categoryTag, "categoryTag");
+
+function formatStatus(status) {
+  const lines = [
+    "📊 <b>Nantry status</b>",
+    "",
+    `Telegram: ${status.telegram_configured ? "✅" : "❌"}`,
+    `D1: ${status.d1_configured ? "✅" : "❌"}`,
+    `YouTube: ${status.youtube_configured ? "✅" : "⚠️ optional"}`,
+    `Google Trends: ${status.google_trends_configured ? "✅ custom" : "✅ default Kenya feed"}`,
+    `Owner chat set: ${status.my_chat_id_configured ? "✅" : "⚠️ not set"}`
+  ];
+  if (status.last_run) {
+    lines.push("", `Last collection: ${status.last_run.started_at || "—"}`);
+    lines.push(`Fetched: ${status.last_run.fetched ?? "—"} · Inserted: ${status.last_run.inserted ?? "—"} · Errors: ${status.last_run.errors ?? 0}`);
+  }
+  if (typeof status.total_items === "number") {
+    lines.push("", `Total stored items: ${status.total_items}`);
+    lines.push(`Items in last 24h: ${status.items_last_24h}`);
+  }
+  if (typeof status.subscriber_count === "number") {
+    lines.push(`Subscribers: ${status.subscriber_count}`);
+  }
+  return lines.join("\n");
+}
+__name(formatStatus, "formatStatus");
 
 function formatCollection(result) {
   if (result.skipped) {
-    return ["⏱ <b>NANTRY</b>", "", "Collection was skipped.", "", escapeHTML(result.reason)].join("\n");
+    return ["⏱ <b>Nantry</b>", "", "Collection was skipped.", "", escapeHTML(result.reason)].join("\n");
   }
-
-  return [
-    "🔎 <b>NANTRY COLLECTION</b>",
+  const lines = [
+    "🔎 <b>Nantry collection</b>",
     "",
     `Fetched: <b>${result.fetched}</b>`,
-    `New records: <b>${result.inserted}</b>`,
+    `New records: <b>${result.inserted}</b>`
+  ];
+  if (typeof result.filtered_out === "number" && result.filtered_out > 0) {
+    lines.push(`Filtered as off-topic: ${result.filtered_out}`);
+  }
+  lines.push(
     "",
     `Google News: ${result.sources.google_news}`,
     `Google Trends: ${result.sources.google_trends}`,
     `YouTube: ${result.sources.youtube}`,
     "",
     result.errors.length ? `⚠️ Errors: ${result.errors.length}` : "✅ Sources healthy"
-  ].join("\n");
+  );
+  return lines.join("\n");
 }
+__name(formatCollection, "formatCollection");
 
 function formatTrends(result) {
   if (!result.ok) return `⚠️ ${escapeHTML(result.error)}`;
-
   const totalStories = result.groups.reduce((sum, g) => sum + g.stories.length, 0);
-
   if (!totalStories) {
-    return ["📊 <b>NANTRY TRENDS</b>", "", "No data yet.", "", "Run /collect first."].join("\n");
+    return ["📊 <b>Nantry trends</b>", "", "No data yet.", "", "Run /collect first."].join("\n");
   }
-
-  const sections = result.groups.map(group => {
+  const sections = result.groups.map((group) => {
     if (!group.stories.length) {
       return `<b>${escapeHTML(group.label)}</b>\nNo signals yet.`;
     }
-
-    const lines = group.stories.map((item, index) =>
-      `${index + 1}. ${escapeHTML(item.title)} <i>[${escapeHTML(item.category)}]</i>${item.url ? `\n${item.url}` : ""}`
-    );
-
+    const lines = group.stories.map((item, index) => {
+      const headline = `${index + 1}. <b>${escapeHTML(item.title)}</b>${categoryTag(item.category)}`;
+      const link = item.url ? `\n   ${linkTag(item.url)}` : "";
+      return headline + link;
+    });
     return [`<b>${escapeHTML(group.label)}</b>`, ...lines].join("\n");
   });
-
-  return ["🔥 <b>NANTRY TRENDS</b>", "", "Top stories over the last 7 days:", "", ...sections].join("\n\n");
+  return ["🔥 <b>Nantry trends</b>", "", "Top stories, last 7 days:", "", ...sections].join("\n\n");
 }
+__name(formatTrends, "formatTrends");
 
 function formatRising(result) {
   if (!result.ok) return `⚠️ ${escapeHTML(result.error)}`;
-
   if (!result.rising.length) {
-    return ["📈 <b>NANTRY RISING</b>", "", "No recent signals yet."].join("\n");
+    return ["📈 <b>Nantry rising</b>", "", "No recent signals yet."].join("\n");
   }
-
   return [
-    "📈 <b>NANTRY RISING</b>",
+    "📈 <b>Nantry rising</b>",
     "",
-    "Fastest-moving categories (last 24h vs prior week):",
+    "Fastest-moving categories, last 24h vs prior week:",
     "",
     ...result.rising.slice(0, 8).map((item, index) => {
       const header = `${index + 1}. <b>${escapeHTML(item.category)}</b> — ${item.current_mentions} signals (${item.momentum}x)`;
-      const sample = item.sample_title ? `\n   ↳ ${escapeHTML(item.sample_title)}${item.sample_url ? `\n   ${item.sample_url}` : ""}` : "";
+      const sample = item.sample_title
+        ? `\n   ↳ ${escapeHTML(item.sample_title)}${item.sample_url ? ` · ${linkTag(item.sample_url)}` : ""}`
+        : "";
       return header + sample;
     })
   ].join("\n\n");
 }
+__name(formatRising, "formatRising");
 
 function formatTopic(result) {
   if (!result.ok) return `⚠️ ${escapeHTML(result.error)}`;
-
   if (!result.items.length) {
-    return ["🔎 <b>NANTRY TOPIC</b>", "", "No matching signals found."].join("\n");
+    return ["🔎 <b>Nantry topic</b>", "", "No matching signals found."].join("\n");
   }
-
   return [
     `🔎 <b>${escapeHTML(result.query)}</b>`,
     "",
-    ...result.items.slice(0, 10).map((item, index) =>
-      `${index + 1}. ${escapeHTML(item.title)} <i>[${escapeHTML(item.category)}]</i>\n${item.url || ""}`
-    )
+    ...result.items.slice(0, 10).map((item, index) => {
+      const headline = `${index + 1}. <b>${escapeHTML(item.title)}</b>${categoryTag(item.category)}`;
+      const link = item.url ? `\n   ${linkTag(item.url)}` : "";
+      return headline + link;
+    })
   ].join("\n\n");
 }
+__name(formatTopic, "formatTopic");
 
 function escapeHTML(value) {
   return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+__name(escapeHTML, "escapeHTML");
 
-/* =========================================================
-   RESPONSE HELPER
-========================================================= */
+function escapeAttr(value) {
+  return escapeHTML(value).replace(/"/g, "&quot;");
+}
+__name(escapeAttr, "escapeAttr");
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -781,3 +1024,8 @@ function json(data, status = 200) {
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
 }
+__name(json, "json");
+
+export {
+  index_default as default
+};
