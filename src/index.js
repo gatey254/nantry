@@ -445,6 +445,24 @@ async function collectSignals(env) {
         errors.push(`YouTube "${query}": ${error.message}`);
       }
     }
+    // Additive: Kenya's trending chart, on top of (not instead of) keyword
+    // search above. This is the "what are people watching right now" signal.
+    try {
+      const trendingItems = await fetchYouTubeTrending(env.YOUTUBE_API_KEY);
+      for (const item of trendingItems) {
+        const text = `${item.title} ${item.description}`;
+        if (!isRelevant(text)) {
+          filteredOut++;
+          continue;
+        }
+        item.source = "youtube_trending";
+        item.category = categorize(text);
+        item.score = calculateScore(item, "youtube_trending");
+        allItems.push(item);
+      }
+    } catch (error) {
+      errors.push(`YouTube trending: ${error.message}`);
+    }
   }
   let inserted = 0;
   if (env.DB && allItems.length) {
@@ -490,7 +508,8 @@ async function collectSignals(env) {
     sources: {
       google_news: allItems.filter((x) => x.source === "google_news").length,
       google_trends: allItems.filter((x) => x.source === "google_trends").length,
-      youtube: allItems.filter((x) => x.source === "youtube").length
+      youtube: allItems.filter((x) => x.source === "youtube").length,
+      youtube_trending: allItems.filter((x) => x.source === "youtube_trending").length
     }
   };
 }
@@ -556,15 +575,76 @@ async function fetchYouTube(apiKey, query) {
     throw new Error(`HTTP ${response.status}: ${body.slice(0, 200)}`);
   }
   const data = await response.json();
-  return (data.items || []).filter((item) => item.id?.videoId).map((item) => ({
+  const items = (data.items || []).filter((item) => item.id?.videoId).map((item) => ({
     external_id: item.id.videoId,
     title: item.snippet?.title || "Untitled",
     description: item.snippet?.description || "",
     url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
     published_at: item.snippet?.publishedAt || null
   }));
+  // Search results don't include engagement stats — fetch them separately
+  // so search-sourced items can be scored the same way as trending ones.
+  await enrichWithStatistics(apiKey, items);
+  return items;
 }
 __name(fetchYouTube, "fetchYouTube");
+
+// Kenya's currently-trending videos (YouTube's own "what's hot" chart),
+// filtered afterwards by isRelevant(). This is a genuine "what are people
+// watching right now" signal, distinct from keyword search which only
+// finds videos that happen to match a query string.
+async function fetchYouTubeTrending(apiKey) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+  url.searchParams.set("part", "snippet,statistics");
+  url.searchParams.set("chart", "mostPopular");
+  url.searchParams.set("regionCode", "KE");
+  url.searchParams.set("maxResults", "25");
+  url.searchParams.set("key", apiKey);
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`HTTP ${response.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await response.json();
+  return (data.items || []).filter((item) => item.id).map((item) => ({
+    external_id: item.id,
+    title: item.snippet?.title || "Untitled",
+    description: item.snippet?.description || "",
+    url: `https://www.youtube.com/watch?v=${item.id}`,
+    published_at: item.snippet?.publishedAt || null,
+    view_count: Number(item.statistics?.viewCount || 0),
+    like_count: Number(item.statistics?.likeCount || 0),
+    comment_count: Number(item.statistics?.commentCount || 0)
+  }));
+}
+__name(fetchYouTubeTrending, "fetchYouTubeTrending");
+
+async function enrichWithStatistics(apiKey, items) {
+  const ids = items.map((i) => i.external_id).filter(Boolean);
+  if (!ids.length) return;
+  // videos.list accepts up to 50 comma-separated IDs per call.
+  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+  url.searchParams.set("part", "statistics");
+  url.searchParams.set("id", ids.slice(0, 50).join(","));
+  url.searchParams.set("key", apiKey);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return;
+    const data = await response.json();
+    const statsById = new Map((data.items || []).map((i) => [i.id, i.statistics || {}]));
+    for (const item of items) {
+      const stats = statsById.get(item.external_id);
+      if (stats) {
+        item.view_count = Number(stats.viewCount || 0);
+        item.like_count = Number(stats.likeCount || 0);
+        item.comment_count = Number(stats.commentCount || 0);
+      }
+    }
+  } catch (error) {
+    console.error("YouTube statistics enrichment failed", error.message);
+  }
+}
+__name(enrichWithStatistics, "enrichWithStatistics");
 
 function categorize(text) {
   const value = String(text || "").toLowerCase();
@@ -587,6 +667,7 @@ __name(categorize, "categorize");
 function calculateScore(item, source) {
   let score = 1;
   if (source === "google_trends") score += 4;
+  if (source === "youtube_trending") score += 3;
   if (source === "youtube") score += 2;
   if (source === "google_news") score += 1;
   if (item.published_at) {
@@ -598,14 +679,31 @@ function calculateScore(item, source) {
       else if (age < 7 * 24 * 60 * 60 * 1e3) score += 1;
     }
   }
+  score += engagementBonus(item);
   return score;
 }
 __name(calculateScore, "calculateScore");
 
+// Real public interest, not just source/recency. Uses log-scale buckets so
+// a video with 2M views doesn't blow the score off the chart relative to
+// everything else — it's a bonus on top of the base score, capped modestly.
+function engagementBonus(item) {
+  let bonus = 0;
+  const views = Number(item.view_count || 0);
+  const likes = Number(item.like_count || 0);
+  const comments = Number(item.comment_count || 0);
+  if (views > 0) bonus += Math.min(5, Math.floor(Math.log10(views + 1)));
+  if (likes > 0) bonus += Math.min(3, Math.floor(Math.log10(likes + 1)));
+  if (comments > 0) bonus += Math.min(2, Math.floor(Math.log10(comments + 1)));
+  return bonus;
+}
+__name(engagementBonus, "engagementBonus");
+
 var TRENDS_SOURCES = [
   { key: "google_news", label: "Google News" },
   { key: "google_trends", label: "Google Trends" },
-  { key: "youtube", label: "YouTube" }
+  { key: "youtube", label: "YouTube" },
+  { key: "youtube_trending", label: "YouTube Trending" }
 ];
 
 async function getStatus(env) {
@@ -942,6 +1040,7 @@ function formatCollection(result) {
     `Google News: ${result.sources.google_news}`,
     `Google Trends: ${result.sources.google_trends}`,
     `YouTube: ${result.sources.youtube}`,
+    `YouTube Trending: ${result.sources.youtube_trending}`,
     "",
     result.errors.length ? `⚠️ Errors: ${result.errors.length}` : "✅ Sources healthy"
   );
